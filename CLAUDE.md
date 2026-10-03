@@ -11,6 +11,7 @@ Company profile kantor hukum FIKTIF "Kantor Hukum Nalar Saksama" + CMS (portofol
 
 ## Konvensi
 - Alamat situs hanya dari `/root/tenma-ws/portofolio/domain.env` (`HUKUM_URL`, `PORTOFOLIO_URL`). Jangan menulis domain staging atau IP server di repo (di luar `docs/`); `DomainReadinessTest` menjaganya. Caddy dibuat dari `deploy/company-profile-hukum.caddy.tmpl` dan wajib memuat `import gerbang_staging`.
+- Mode tunnel (putaran 4): Tailscale Funnel → Caddy `http://127.0.0.1:80` → PHP. Laravel hanya memercayai proxy `127.0.0.1` (`trustProxies` di `bootstrap/app.php`); jangan pakai header `Tailscale-User-*`. Uji dari server mungkin lewat relay di `/etc/hosts` (jangan diubah).
 - Halaman publik tanpa JavaScript (menu dan FAQ memakai `<details>`); tidak ada style/script inline karena CSP ketat di Caddy.
 - Animasi hanya CSS (transform/opacity) di akhir `resources/css/app.css`, di dalam `@media (prefers-reduced-motion: no-preference)`; scroll-driven di dalam `@supports`. Kelas: `.hero-reveal`, `.memo-*`, `.reveal`, `.lift`, `.read-progress`. Rekaman: `REKAM=1 npx playwright test tests/e2e/rekam-animasi.spec.ts`.
 - Komponen ikon bernama `<x-ikon>` (bukan `x-icon`, bentrok dengan blade-icons milik Filament).

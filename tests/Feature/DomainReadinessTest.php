@@ -56,7 +56,7 @@ class DomainReadinessTest extends TestCase
     {
         $caddy = file_get_contents(base_path('deploy/company-profile-hukum.caddy.tmpl'));
 
-        $this->assertMatchesRegularExpression('/^__HUKUM_HOST__ \{\n\timport gerbang_staging\n/m', $caddy);
+        $this->assertMatchesRegularExpression('/^(http:\/\/)?__HUKUM_HOST__ \{\n\timport gerbang_staging\n/m', $caddy);
         $this->assertStringContainsString('php_fastcgi', $caddy);
 
         preg_match('/header @public Content-Security-Policy "([^"]+)"/', $caddy, $public);

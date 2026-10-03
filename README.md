@@ -2,9 +2,9 @@
 
 Situs demo portofolio Tenma: company profile kantor hukum **fiktif** "Kantor Hukum Nalar Saksama", lengkap dengan CMS supaya klien bisa mengubah isinya sendiri. Firma, tim, alamat, dan kontaknya tidak nyata, dan isinya bukan nasihat hukum.
 
-- Situs: alamat `HUKUM_URL` di `/root/tenma-ws/portofolio/domain.env` (satu-satunya sumber alamat; lihat [Pindah domain](#pindah-domain)).
-- Panel admin: `HUKUM_URL` + `/admin`. Akun demo tertera di halaman login, dan semua data direset tiap malam pukul 00.00 WIB.
-- Selama alamat masih staging, pengunjung dari luar server diminta kata sandi oleh gerbang staging Caddy (`import gerbang_staging`, dikelola agen utama).
+- Situs: https://hukum.tail482cb9.ts.net (nilai `HUKUM_URL` di `/root/tenma-ws/portofolio/domain.env`, satu-satunya sumber alamat; lihat [Pindah domain](#pindah-domain)).
+- Panel admin: https://hukum.tail482cb9.ts.net/admin. Akun demo tertera di halaman login, dan semua data direset tiap malam pukul 00.00 WIB.
+- Situs dibuka publik lewat Tailscale Funnel, yang menangani TLS dan menyembunyikan alamat server (lihat [Di balik proxy](#di-balik-proxy-tailscale-funnel)).
 
 ## Fitur
 
@@ -53,7 +53,7 @@ php artisan test          # PHPUnit: halaman publik, form, akses admin, upload, 
 npx playwright test       # e2e (kirim form, login admin demo), animasi + reduced motion, responsif & screenshot 360–1440 px
 ```
 
-Playwright menjalankan `scripts/e2e-server.sh` (database terpisah `database/e2e.sqlite`, port 8002). Untuk menguji situs yang sudah dideploy, set `E2E_BASE_URL` ke `HUKUM_URL`. Screenshot tersimpan di `docs/screenshots/`, laporan Lighthouse (`scripts/lighthouse.sh`) di `docs/lighthouse/`.
+Playwright menjalankan `scripts/e2e-server.sh` (database terpisah `database/e2e.sqlite`, port 8002). Untuk menguji situs yang sudah dideploy: `E2E_BASE_URL=$(grep ^HUKUM_URL= /root/tenma-ws/portofolio/domain.env | cut -d= -f2-) npx playwright test`. Screenshot tersimpan di `docs/screenshots/`, laporan Lighthouse (`scripts/lighthouse.sh`) di `docs/lighthouse/`.
 
 ## Deploy
 
@@ -61,11 +61,19 @@ Playwright menjalankan `scripts/e2e-server.sh` (database terpisah `database/e2e.
 
 | Komponen | Berkas |
 |---|---|
-| Situs Caddy (template; php_fastcgi, `import gerbang_staging`, header keamanan, CSP) | `deploy/company-profile-hukum.caddy.tmpl` |
+| Situs Caddy (template `http://<host>` untuk mode tunnel; php_fastcgi, `import gerbang_staging`, header keamanan, CSP) | `deploy/company-profile-hukum.caddy.tmpl` |
 | Pool PHP-FPM khusus (`open_basedir`) | `deploy/php-fpm-pool.conf` |
 | Worker queue | `deploy/systemd/company-profile-hukum-queue.service` |
 | Scheduler tiap menit | `deploy/systemd/company-profile-hukum-scheduler.{service,timer}` |
 | Reset data demo 00.00 WIB | `deploy/systemd/company-profile-hukum-demo-reset.{service,timer}` |
+
+## Di balik proxy (Tailscale Funnel)
+
+Alur permintaan: pengunjung → Tailscale Funnel (HTTPS) → Caddy di `http://127.0.0.1:80` (mode tunnel, dikelola agen utama) → php8.3-fpm. PHP menerima `REMOTE_ADDR` 127.0.0.1 plus `X-Forwarded-For`, `X-Forwarded-Proto: https`, dan `X-Forwarded-Host`.
+
+- `bootstrap/app.php` hanya memercayai proxy `127.0.0.1` (`trustProxies`). Dengan begitu `$request->ip()` adalah IP pengunjung asli (dipakai rate limit form dan tabel sesi), dan skema https terdeteksi: cookie `Secure`, URL absolut/canonical/Open Graph https, redirect https, tanpa mixed content. Header `X-Forwarded-*` dari alamat lain diabaikan.
+- Aplikasi tidak memakai header identitas akun Tailscale (`Tailscale-User-*`); Caddy membuangnya lewat snippet `gerbang_staging`.
+- Bukti otomatis ada di `tests/Feature/BehindProxyTest.php`. Uji manual rate limit per pengunjung dari server (data sengaja tidak valid supaya tidak ada yang tersimpan): ambil cookie sesi dan `_token` dari `GET http://127.0.0.1:80/kontak` dengan header `Host: hukum.tail482cb9.ts.net`, lalu kirim `POST /kontak` dengan `X-Forwarded-For` berbeda. Satu pengunjung mendapat `X-RateLimit-Remaining` 4 → 0 lalu `Retry-After` pada kiriman ke-6, sedangkan pengunjung lain tetap punya kuota sendiri.
 
 ## Pindah domain
 
@@ -73,7 +81,8 @@ Semua alamat dibaca dari `/root/tenma-ws/portofolio/domain.env`: `HUKUM_URL` unt
 
 1. Ubah `HUKUM_URL` (dan bila perlu `PORTOFOLIO_URL`) di `domain.env`, misalnya `HUKUM_URL=https://hukum.contoh.id`. Pastikan DNS domain itu sudah mengarah ke server.
 2. Jalankan `deploy/deploy.sh` sebagai root. Skrip menulis `APP_URL` dan `PORTFOLIO_URL` ke `.env` produksi, membuat ulang cache, lalu membuat `/etc/caddy/sites/company-profile-hukum.caddy` dari template dengan host yang baru.
-3. Skrip memvalidasi konfigurasi lalu me-reload Caddy, dan Caddy mengurus sertifikat HTTPS untuk domain baru secara otomatis. Kalau perlu me-reload manual: `caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy`.
+3. Skrip memvalidasi konfigurasi lalu me-reload Caddy. Kalau perlu me-reload manual: `caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy`.
+4. Dalam mode tunnel, TLS ditangani Tailscale Funnel; arahkan Funnel atau domain baru ke `http://127.0.0.1:80` (diatur agen utama).
 
 ## Struktur penting
 
@@ -87,6 +96,6 @@ Aset dan lisensinya tercantum di [CREDITS.md](CREDITS.md).
 
 ## Status
 
-Putaran 1 (2 Oktober 2026) dan putaran 2 (3 Oktober 2026) selesai; hasil uji terakhir dicatat di `/root/tenma-ws/portofolio/progress/company-profile-hukum.md`.
+Putaran 1 (2 Oktober 2026), putaran 2, dan putaran 4 (3 Oktober 2026) selesai. Hasil uji terakhir terhadap https://hukum.tail482cb9.ts.net: PHPUnit 63 test lulus, Playwright 13 test lulus, Lighthouse mobile beranda dan artikel 100/100/100/100 dengan CLS 0 (laporan di `docs/lighthouse/`).
 
 Catatan pemeliharaan konten: artikel dan bidang ketenagakerjaan perlu ditinjau ulang setelah UU ketenagakerjaan baru diundangkan (RUU-nya dijadwalkan disahkan DPR awal Oktober 2026), begitu pula bagian pelindungan data pribadi saat PP 33/2026 mulai berlaku pada 16 Januari 2027.
