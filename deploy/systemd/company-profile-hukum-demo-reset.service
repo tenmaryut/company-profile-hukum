@@ -1,0 +1,31 @@
+[Unit]
+Description=Nalar Saksama (company-profile-hukum): reset data demo tiap malam
+After=network.target
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/srv/web/company-profile-hukum
+ExecStart=/usr/bin/php artisan demo:reset --force
+UMask=0022
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/srv/web/company-profile-hukum/storage /srv/web/company-profile-hukum/bootstrap/cache /var/lib/company-profile-hukum
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=

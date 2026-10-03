@@ -1,0 +1,9 @@
+[Unit]
+Description=Nalar Saksama (company-profile-hukum): reset data demo tiap malam 00.00 WIB
+
+[Timer]
+OnCalendar=*-*-* 00:00:00 Asia/Jakarta
+Persistent=true
+
+[Install]
+WantedBy=timers.target

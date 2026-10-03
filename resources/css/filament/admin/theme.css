@@ -1,0 +1,11 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+@source '../../../views/components/avatar.blade.php';
+@source '../../../views/components/logo.blade.php';
+
+@theme {
+    --color-notice: #f1d687;
+    --color-notice-ink: #2b2208;
+}
