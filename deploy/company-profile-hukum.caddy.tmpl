@@ -3,7 +3,8 @@
 # dari HUKUM_URL di /root/tenma-ws/portofolio/domain.env, lalu memasangnya ke /etc/caddy/sites/.
 # Ubah di repo, bukan di /etc.
 
-__HUKUM_HOST__ {
+# Mode tunnel (Tailscale Funnel): TLS ditangani Funnel; Caddy melayani HTTP polos di localhost.
+http://__HUKUM_HOST__ {
 	import gerbang_staging
 	root * /srv/web/company-profile-hukum/public
 	encode zstd gzip
