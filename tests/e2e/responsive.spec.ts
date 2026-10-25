@@ -30,6 +30,8 @@ test.beforeAll(() => {
 });
 
 test('halaman publik responsif 360–1440 px', async ({ page, request }) => {
+    // Puluhan halaman di 4 lebar layar dalam satu test: di CPU VPS yang lambat butuh lebih dari 60 detik.
+    test.slow();
     const sitemap = await (await request.get('/sitemap.xml')).text();
     const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname);
     const firstArea = urls.find((u) => u.startsWith('/bidang-praktik/'));
@@ -70,6 +72,7 @@ test('halaman publik responsif 360–1440 px', async ({ page, request }) => {
 });
 
 test('panel admin responsif 360–1440 px', async ({ page }) => {
+    test.slow();
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/admin/login');
     await shoot(page, 'admin-login', 1440);
