@@ -77,7 +77,7 @@ Alur permintaan: pengunjung → Tailscale Funnel (HTTPS) → Caddy di `http://12
 
 ## Pindah domain
 
-Semua alamat dibaca dari `/root/tenma-ws/portofolio/domain.env`: `HUKUM_URL` untuk situs ini dan `PORTOFOLIO_URL` untuk tautan ke portofolio pembuat. Tidak ada alamat yang ditulis langsung di kode, konten, konfigurasi, atau berkas deploy (dijaga oleh `tests/Feature/DomainReadinessTest.php`).
+Semua alamat dibaca dari `/root/tenma-ws/portofolio/domain.env`: `HUKUM_URL` untuk situs ini dan `PORTOFOLIO_URL` untuk tautan ke portofolio pembuat. Tidak ada alamat yang ditulis langsung di kode, konten, konfigurasi, atau berkas deploy (dijaga oleh `tests/Feature/DomainReadinessTest.php`). Pola IP server dibaca test itu dari `~/.config/git/denylist-publik` saat runtime, sama dengan hook git, jadi IP maupun polanya tidak pernah ditulis di repo.
 
 1. Ubah `HUKUM_URL` (dan bila perlu `PORTOFOLIO_URL`) di `domain.env`, misalnya `HUKUM_URL=https://hukum.contoh.id`. Pastikan DNS domain itu sudah mengarah ke server.
 2. Jalankan `deploy/deploy.sh` sebagai root. Skrip menulis `APP_URL` dan `PORTFOLIO_URL` ke `.env` produksi, membuat ulang cache, lalu membuat `/etc/caddy/sites/company-profile-hukum.caddy` dari template dengan host yang baru.
