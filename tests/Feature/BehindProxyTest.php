@@ -34,8 +34,13 @@ class BehindProxyTest extends TestCase
             'X-Forwarded-For' => $visitorIp.', 127.0.0.1',
             'X-Forwarded-Proto' => 'https',
             'X-Forwarded-Host' => self::HOST,
-            'Host' => self::HOST,
         ]);
+    }
+
+    /** Alamat yang diminta Funnel ke Caddy: http ke host asli (header Host), https hanya dari X-Forwarded-Proto. */
+    private function funnelUrl(string $path): string
+    {
+        return 'http://'.self::HOST.$path;
     }
 
     /** @return array<string, mixed> */
@@ -54,7 +59,7 @@ class BehindProxyTest extends TestCase
             return 'ok';
         });
 
-        $this->viaFunnel('203.0.113.7')->get('/_uji-proxy')->assertOk();
+        $this->viaFunnel('203.0.113.7')->get($this->funnelUrl('/_uji-proxy'))->assertOk();
 
         $this->assertSame('203.0.113.7', $request->ip());
         $this->assertTrue($request->isSecure());
@@ -80,11 +85,30 @@ class BehindProxyTest extends TestCase
         $this->assertNotSame('palsu.example', $request->getHost());
     }
 
+    public function test_port_dan_host_dari_header_proxy_lokal_tidak_dipercaya(): void
+    {
+        // Funnel menimpa X-Forwarded-For/Host/Proto, tetapi meneruskan X-Forwarded-Port kiriman pengunjung
+        // apa adanya. Host asli sudah ada di header Host, jadi hanya For dan Proto yang dipercaya.
+        $request = null;
+        $this->app['router']->get('/_uji-proxy', function (\Illuminate\Http\Request $r) use (&$request) {
+            $request = $r;
+
+            return 'ok';
+        });
+
+        $this->viaFunnel('203.0.113.7')
+            ->withHeaders(['X-Forwarded-Port' => '8443', 'X-Forwarded-Host' => 'palsu.example:8443'])
+            ->get($this->funnelUrl('/_uji-proxy'))
+            ->assertOk();
+
+        $this->assertSame('https://'.self::HOST, $request->getSchemeAndHttpHost());
+    }
+
     public function test_url_absolut_cookie_secure_dan_redirect_https(): void
     {
         config(['session.secure' => null]); // biarkan Laravel menentukan dari skema request
 
-        $response = $this->viaFunnel('203.0.113.7')->get('/');
+        $response = $this->viaFunnel('203.0.113.7')->get($this->funnelUrl('/'));
 
         $response->assertOk()
             ->assertSee('<link rel="canonical" href="https://'.self::HOST, false)
@@ -95,7 +119,7 @@ class BehindProxyTest extends TestCase
             $this->assertTrue($cookie->isSecure(), "cookie {$cookie->getName()} harus Secure");
         }
 
-        $redirect = $this->viaFunnel('203.0.113.7')->post('/kontak', $this->invalidForm())->assertRedirect();
+        $redirect = $this->viaFunnel('203.0.113.7')->post($this->funnelUrl('/kontak'), $this->invalidForm())->assertRedirect();
         $this->assertStringStartsWith('https://'.self::HOST, $redirect->headers->get('Location'));
     }
 
@@ -104,18 +128,18 @@ class BehindProxyTest extends TestCase
         Notification::fake();
 
         for ($i = 1; $i <= 5; $i++) {
-            $this->viaFunnel('203.0.113.10')->post('/kontak', $this->invalidForm())
+            $this->viaFunnel('203.0.113.10')->post($this->funnelUrl('/kontak'), $this->invalidForm())
                 ->assertHeader('X-RateLimit-Remaining', (string) (5 - $i))
                 ->assertSessionMissing('errors.form');
         }
 
         // Pengunjung A kena batas ...
-        $this->viaFunnel('203.0.113.10')->post('/kontak', $this->invalidForm())
+        $this->viaFunnel('203.0.113.10')->post($this->funnelUrl('/kontak'), $this->invalidForm())
             ->assertHeader('Retry-After')
             ->assertSessionHasErrors('form');
 
         // ... sedangkan pengunjung B punya kuota sendiri.
-        $this->viaFunnel('203.0.113.20')->post('/kontak', $this->invalidForm())
+        $this->viaFunnel('203.0.113.20')->post($this->funnelUrl('/kontak'), $this->invalidForm())
             ->assertHeader('X-RateLimit-Remaining', '4')
             ->assertSessionDoesntHaveErrors('form');
 
