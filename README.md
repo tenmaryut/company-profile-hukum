@@ -98,4 +98,6 @@ Aset dan lisensinya tercantum di [CREDITS.md](CREDITS.md).
 
 Putaran 1 (2 Oktober 2026), putaran 2, dan putaran 4 (3 Oktober 2026) selesai. Hasil uji terakhir terhadap https://hukum.tail482cb9.ts.net: PHPUnit 63 test lulus, Playwright 13 test lulus, Lighthouse mobile beranda dan artikel 100/100/100/100 dengan CLS 0 (laporan di `docs/lighthouse/`).
 
+Pembaruan keamanan 25 Oktober 2026: Livewire 4.4.8 (GHSA-mhf7-xp6r-6qrc), serta Vite 8.3.5, shell-quote, dan dependensi build lain lewat `npm audit fix`. `composer audit` dan `npm audit` bersih; PHPUnit 64 test dan Playwright 13 test lulus terhadap server lokal.
+
 Catatan pemeliharaan konten: artikel dan bidang ketenagakerjaan perlu ditinjau ulang setelah UU ketenagakerjaan baru diundangkan (RUU-nya dijadwalkan disahkan DPR awal Oktober 2026), begitu pula bagian pelindungan data pribadi saat PP 33/2026 mulai berlaku pada 16 Januari 2027.
