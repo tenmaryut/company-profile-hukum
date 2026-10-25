@@ -7,6 +7,8 @@
 # ubah domain.env, jalankan deploy/deploy.sh, selesai (Caddy di-reload otomatis).
 #   deploy/deploy.sh --install  sekali di awal: .env produksi, database, data demo, akun admin asli,
 #                               pool PHP-FPM, unit systemd, dan situs Caddy (SKIP_SEED=1: tanpa data demo)
+#   SKIP_SERVICES=1 deploy/deploy.sh   kode dan konfigurasi diperbarui, tetapi layanan tidak dinyalakan
+#                               atau dimuat ulang (mis. selama situs sengaja dimatikan untuk pemeliharaan)
 #
 # Kode dan vendor milik root (grup www-data, hanya-baca). storage/, bootstrap/cache, dan database
 # milik www-data. Perintah artisan yang menyentuh database dijalankan sebagai www-data.
@@ -174,7 +176,7 @@ install -m 0644 "$SRC/deploy/php-fpm-pool.conf" /etc/php/8.3/fpm/pool.d/$APP.con
 php-fpm8.3 -t
 install -m 0644 "$SRC"/deploy/systemd/$APP-*.service "$SRC"/deploy/systemd/$APP-*.timer /etc/systemd/system/
 systemctl daemon-reload
-systemctl enable --now $APP-queue.service $APP-scheduler.timer $APP-demo-reset.timer
+[[ "${SKIP_SERVICES:-0}" == 1 ]] || systemctl enable --now $APP-queue.service $APP-scheduler.timer $APP-demo-reset.timer
 backup="$(mktemp)"
 cp -a /etc/caddy/sites/$APP.caddy "$backup" 2>/dev/null || true
 sed "s#__HUKUM_HOST__#$HOST#g" "$SRC/deploy/$APP.caddy.tmpl" > "/etc/caddy/sites/$APP.caddy"
@@ -187,6 +189,11 @@ if ! caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null
     exit 1
 fi
 rm -f "$backup"
+
+if [[ "${SKIP_SERVICES:-0}" == 1 ]]; then
+    step "Selesai tanpa menyalakan layanan (SKIP_SERVICES=1): $URL"
+    exit 0
+fi
 
 step "Muat ulang layanan"
 systemctl reload php8.3-fpm

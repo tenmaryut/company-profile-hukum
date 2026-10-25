@@ -57,7 +57,7 @@ Playwright menjalankan `scripts/e2e-server.sh` (database terpisah `database/e2e.
 
 ## Deploy
 
-`deploy/deploy.sh` (sebagai root) membangun aset, menyinkronkan kode ke `/srv/web/company-profile-hukum`, memasang dependensi tanpa dev, menjalankan migrasi, lalu meng-cache config/route/view. Jalankan sekali dengan `--install` untuk membuat `.env` produksi, database di `/var/lib/company-profile-hukum`, data demo, dan akun admin asli (kredensial di `/root/tenma-ws/portofolio/rahasia/company-profile-hukum.txt`). Setiap deploy juga memasang pool PHP-FPM, unit systemd, dan situs Caddy dari folder `deploy/`.
+`deploy/deploy.sh` (sebagai root) membangun aset, menyinkronkan kode ke `/srv/web/company-profile-hukum`, memasang dependensi tanpa dev, menjalankan migrasi, lalu meng-cache config/route/view. Jalankan sekali dengan `--install` untuk membuat `.env` produksi, database di `/var/lib/company-profile-hukum`, data demo, dan akun admin asli (kredensial di `/root/tenma-ws/portofolio/rahasia/company-profile-hukum.txt`). Setiap deploy juga memasang pool PHP-FPM, unit systemd, dan situs Caddy dari folder `deploy/`. Selama situs sengaja dimatikan untuk pemeliharaan, jalankan `SKIP_SERVICES=1 deploy/deploy.sh`: kode, cache, dan konfigurasi diperbarui tanpa menyalakan atau memuat ulang layanan.
 
 | Komponen | Berkas |
 |---|---|
